@@ -1,0 +1,103 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Chat Room</title>
+    <style>
+        body {
+            background: #1c1c1c;
+            color: white;
+            font-family: Arial, sans-serif;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            height: 100vh;
+            margin: 0;
+        }
+        .container {
+            background: #2c2c2c;
+            padding: 20px;
+            border-radius: 10px;
+            box-shadow: 0 5px 15px rgba(0, 0, 0, 0.5);
+            width: 80%;
+            max-width: 600px;
+        }
+        h1 {
+            text-align: center;
+            color: #FFD700;
+        }
+        .user-list, .room-form {
+            margin: 20px 0;
+        }
+        .user {
+            display: flex;
+            justify-content: space-between;
+            background: #333;
+            padding: 10px;
+            margin: 5px 0;
+            border-radius: 5px;
+        }
+        button {
+            background: #FFD700;
+            color: black;
+            border: none;
+            padding: 10px 15px;
+            cursor: pointer;
+            border-radius: 5px;
+        }
+        button:hover {
+            background: #FFC107;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>Online Users</h1>
+        <div id="user-list" class="user-list"></div>
+
+        <h2>Create or Join a Room</h2>
+        <form action="/create_room" method="POST" class="room-form">
+            <input type="text" name="room_name" placeholder="Room Name" required>
+            <button type="submit">Create Room</button>
+        </form>
+    </div>
+
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/socket.io/4.0.1/socket.io.js"></script>
+    <script>
+        const socket = io();
+
+        // Update online user list
+        socket.on("update_user_list", (users) => {
+            const userList = document.getElementById("user-list");
+            userList.innerHTML = "";
+            
+            users.forEach(user => {
+                const div = document.createElement("div");
+                div.classList.add("user");
+                div.innerHTML = `
+                    <span>${user}</span>
+                    <button onclick="sendInvite('${user}')">Invite</button>
+                `;
+                userList.appendChild(div);
+            });
+        });
+
+        // Send invite to specific user
+        function sendInvite(user) {
+            const roomName = prompt("Enter room name to invite the user:");
+            if (roomName) {
+                socket.emit("send_invite", { user, room: roomName });
+                alert(`Invite sent to ${user} for room ${roomName}`);
+            }
+        }
+
+        // Receive invite
+        socket.on("receive_invite", (data) => {
+            if (confirm(`You have been invited to room: ${data.room}. Join?`)) {
+                window.location.href = `/room/${data.room}`;
+            }
+        });
+    </script>
+</body>
+</html>

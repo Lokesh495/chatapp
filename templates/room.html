@@ -1,0 +1,217 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Chat Room</title>
+    <style>
+        /* General Styling */
+        body {
+            background: #1c1c1c;
+            color: white;
+            font-family: Arial, sans-serif;
+            margin: 0;
+            padding: 0;
+            display: flex;
+            flex-direction: column;
+            height: 100vh;
+        }
+
+        .container {
+            display: flex;
+            flex: 1;
+        }
+
+        /* Sidebar for users list */
+        .sidebar {
+            background: #2c2c2c;
+            width: 20%;
+            padding: 20px;
+            box-shadow: 2px 0 10px rgba(0, 0, 0, 0.5);
+            overflow-y: auto;
+        }
+
+        .sidebar h2 {
+            font-size: 20px;
+            color: #FFD700;
+            text-align: center;
+        }
+
+        .user {
+            background: #333;
+            color: white;
+            padding: 10px;
+            margin: 10px 0;
+            border-radius: 5px;
+            cursor: pointer;
+            transition: 0.3s;
+        }
+
+        .user:hover {
+            background: #555;
+        }
+
+        /* Chat Area */
+        .chat-area {
+            flex: 1;
+            display: flex;
+            flex-direction: column;
+        }
+
+        .header {
+            background: #2c2c2c;
+            padding: 15px;
+            font-size: 18px;
+            color: #FFD700;
+            text-align: center;
+            box-shadow: 0 5px 10px rgba(0, 0, 0, 0.5);
+        }
+
+        .messages {
+            flex: 1;
+            padding: 20px;
+            overflow-y: auto;
+            display: flex;
+            flex-direction: column;
+            gap: 10px;
+        }
+
+        .message {
+            background: #444;
+            color: white;
+            padding: 15px;
+            border-radius: 10px;
+            max-width: 70%;
+            word-wrap: break-word;
+            box-shadow: 0 5px 10px rgba(0, 0, 0, 0.3);
+        }
+
+        .message.me {
+            background: #25D366;  /* WhatsApp Green */
+            color: black;
+            align-self: flex-end;
+        }
+
+        .message .username {
+            font-weight: bold;
+            color: #FFD700;
+        }
+
+        .message-box {
+            display: flex;
+            padding: 15px;
+            background: #2c2c2c;
+            box-shadow: 0 -5px 10px rgba(0, 0, 0, 0.5);
+        }
+
+        .message-box input {
+            flex: 1;
+            padding: 10px;
+            border: none;
+            border-radius: 5px;
+            margin-right: 10px;
+        }
+
+        .message-box button {
+            padding: 10px 20px;
+            border: none;
+            background: #25D366;  /* WhatsApp Green */
+            color: black;
+            border-radius: 5px;
+            cursor: pointer;
+            transition: 0.3s;
+        }
+
+        .message-box button:hover {
+            background: #128C7E;
+        }
+
+        /* Responsive */
+        @media (max-width: 768px) {
+            .sidebar {
+                display: none;
+            }
+            .chat-area {
+                width: 100%;
+            }
+        }
+    </style>
+</head>
+<body>
+    <div class="header">
+        Room: <span id="room-name">{{ room }}</span>
+    </div>
+
+    <div class="container">
+        <!-- Sidebar with online users -->
+        <div class="sidebar">
+            <h2>Online Users</h2>
+            <div id="user-list"></div>
+        </div>
+
+        <!-- Chat area -->
+        <div class="chat-area">
+            <div class="messages" id="messages"></div>
+
+            <div class="message-box">
+                <input type="text" id="message" placeholder="Type your message..." required>
+                <button onclick="sendMessage()">Send</button>
+            </div>
+        </div>
+    </div>
+
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/socket.io/4.0.1/socket.io.js"></script>
+    <script>
+        const socket = io();
+        const room = "{{ room }}";
+        const username = "{{ username }}";
+
+        // Join the room
+        socket.emit("join", { room });
+
+        // Display users in the room
+        socket.on("update_user_list", (users) => {
+            const userList = document.getElementById("user-list");
+            userList.innerHTML = "";
+            
+            users.forEach(user => {
+                const div = document.createElement("div");
+                div.classList.add("user");
+                div.textContent = user;
+                userList.appendChild(div);
+            });
+        });
+
+        // Display new message
+        socket.on("receive_message", (data) => {
+            const messagesDiv = document.getElementById("messages");
+
+            const messageDiv = document.createElement("div");
+            messageDiv.classList.add("message");
+            
+            if (data.username === username) {
+                messageDiv.classList.add("me");
+            }
+
+            messageDiv.innerHTML = `
+                <div class="username">${data.username}</div>
+                <div>${data.message}</div>
+            `;
+            
+            messagesDiv.appendChild(messageDiv);
+            messagesDiv.scrollTop = messagesDiv.scrollHeight;  // Auto-scroll to bottom
+        });
+
+        // Send message
+        function sendMessage() {
+            const messageInput = document.getElementById("message");
+            const message = messageInput.value.trim();
+
+            if (message) {
+                socket.emit("send_message", { room, username, message });
+                messageInput.value = "";
+            }
+        }
+    </script>
+</body>
+</html>
